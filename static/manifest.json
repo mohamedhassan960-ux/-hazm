@@ -1,0 +1,16 @@
+{
+    "name": "Hazm Life OS",
+    "short_name": "Hazm",
+    "description": "المساعد الذكي لتخطيط وإدارة حياتك",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#09090b",
+    "theme_color": "#8b5cf6",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/3242/3242257.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

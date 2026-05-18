@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>حازم</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <meta name="theme-color" content="#09090b">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3242/3242257.png">
+</head>
+<body>
+    <!-- ─── Splash Screen ─── -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <i class="ph-fill ph-brain splash-logo"></i>
+            <h2 class="splash-title" style="font-size: 3.5rem; letter-spacing: 0;">حازم</h2>
+            <p class="splash-subtitle" style="letter-spacing: 0;">نظام إدارة حياتك الذكي</p>
+        </div>
+    </div>
+
+    <!-- ─── Onboarding Overlay (3 Phases) ─── -->
+    <div id="onboarding-overlay" class="onboarding-overlay" style="display:none;">
+
+        <!-- PHASE 1: The Story -->
+        <div id="ob-phase-story" class="ob-phase active">
+            <div class="ob-story-card">
+                <div class="ob-story-slides" id="ob-story-slides">
+                    <!-- Slide 1 -->
+                    <div class="ob-slide active" data-slide="1">
+                        <div class="ob-story-emoji">😔</div>
+                        <h2 class="ob-story-title">كان في شاب اسمه <span class="highlight">محمد أبو الحمد</span></h2>
+                        <p class="ob-story-text">زي أي حد طموح... كان نفسه يعيش حياة متوازنة. يطوّر شغله، يحافظ على صحته، يقوّي علاقاته، ويفضل قريب من ربنا.</p>
+                        <p class="ob-story-link">بس الموضوع ماكانش سهل زي ما فاكر...</p>
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="ob-slide" data-slide="2">
+                        <div class="ob-story-emoji">⚖️</div>
+                        <h2 class="ob-story-title">كل ما يركّز في حاجة، <span class="highlight">حاجة تانية تقع</span></h2>
+                        <p class="ob-story-text">يركّز في الشغل؟ صحته تتدهور. يهتم بصحته؟ الدخل يقل. يحاول يوازن؟ يحس إنه مش مسيطر على أي حاجة.</p>
+                        <p class="ob-story-link">لحد ما قرر يعمل حاجة مختلفة...</p>
+                    </div>
+                    <!-- Slide 3 -->
+                    <div class="ob-slide" data-slide="3">
+                        <div class="ob-story-emoji">💡</div>
+                        <h2 class="ob-story-title">قرر يبني <span class="highlight">نظام يدير حياته بالكامل</span></h2>
+                        <p class="ob-story-text">مش مجرد تطبيق مهام. نظام ذكي يفهمه، يخطط معاه، يسجّل كل تفصيلة في حياته، ويتابع التزامه في كل الجوانب مرة واحدة.</p>
+                        <p class="ob-story-link">وفعلاً.. النظام ده اتولد.</p>
+                    </div>
+                    <!-- Slide 4 -->
+                    <div class="ob-slide" data-slide="4">
+                        <div class="ob-story-emoji">🧠</div>
+                        <h2 class="ob-story-title">أنا اسمي <span class="highlight">حازم</span></h2>
+                        <p class="ob-story-text">أنا النظام اللي محمد بناه. مساعدك الشخصي الذكي. هدفي إنك ماتمرّش بنفس المعاناة. أنا هنا عشان أساعدك تحقق أهدافك وتعيش حياة متوازنة فعلاً.</p>
+                        <p class="ob-story-link">بس عشان أقدر أساعدك صح...</p>
+                    </div>
+                    <!-- Slide 5 -->
+                    <div class="ob-slide" data-slide="5">
+                        <div class="ob-story-emoji">🤝</div>
+                        <h2 class="ob-story-title">محتاج <span class="highlight">أعرفك</span> الأول</h2>
+                        <p class="ob-story-text">هسألك كام سؤال بسيط عشان أفهم وضعك وأقدر أخصّص التجربة ليك. مش هياخد أكتر من دقيقة.</p>
+                        <button class="ob-action-btn" id="ob-start-chat-btn">يلا نتعرف! ✨</button>
+                    </div>
+                </div>
+                <div class="ob-story-nav">
+                    <div class="ob-dots" id="ob-story-dots"></div>
+                    <div class="ob-story-btns">
+                        <button class="ob-skip-btn" id="ob-skip-btn">تخطي</button>
+                        <button class="ob-next-story-btn" id="ob-next-story-btn">التالي ←</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 2: Personalization Chat -->
+        <div id="ob-phase-chat" class="ob-phase">
+            <div class="ob-chat-card">
+                <div class="ob-chat-header">
+                    <div class="ai-avatar" style="width:36px; height:36px; border-radius:12px; font-size:1.2rem;"><i class="ph-fill ph-brain"></i></div>
+                    <div>
+                        <h3 style="font-size:1rem; font-weight:800;">حازم بيتعرف عليك</h3>
+                        <span class="ob-chat-progress" id="ob-q-progress">سؤال ١ من ٥</span>
+                    </div>
+                </div>
+                <div class="ob-chat-messages" id="ob-chat-messages"></div>
+                <div class="ob-chat-input-area">
+                    <input type="text" id="ob-chat-input" placeholder="اكتب إجابتك..." autocomplete="off">
+                    <button id="ob-chat-send-btn"><i class="ph-fill ph-paper-plane-tilt"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 3: Spotlight Tour -->
+        <div id="ob-phase-tour" class="ob-phase">
+            <div class="ob-spotlight-overlay" id="ob-spotlight-bg"></div>
+            <div class="ob-tooltip" id="ob-tooltip">
+                <p class="ob-tooltip-text" id="ob-tooltip-text"></p>
+                <div class="ob-tooltip-nav">
+                    <span class="ob-tooltip-counter" id="ob-tooltip-counter"></span>
+                    <button class="ob-tooltip-btn" id="ob-tour-next-btn">التالي ←</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ─── Auth Overlay (Premium 2026) ─── -->
+    <div id="auth-overlay" class="auth-overlay hidden">
+        <div class="auth-card premium-auth">
+            <div class="auth-logo-box">
+                <i class="ph-fill ph-brain"></i>
+            </div>
+            <h2 class="auth-title">حازم</h2>
+            <p class="auth-subtitle">المساعد الذكي لتخطيط وإدارة حياتك</p>
+            
+            <div class="auth-benefits">
+                <div class="benefit-item"><i class="ph-fill ph-check-circle"></i> خطة يومية ذكية</div>
+                <div class="benefit-item"><i class="ph-fill ph-check-circle"></i> تتبع متوازن لجوانب حياتك</div>
+            </div>
+
+            <button id="google-login-btn" class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+                <span>المتابعة بحساب Google</span>
+            </button>
+            
+
+            
+            <p class="auth-terms">بتسجيلك، أنت توافق على شروط الاستخدام والخصوصية</p>
+        </div>
+    </div>
+
+    <!-- ─── Main App Container ─── -->
+    <main id="app-container">
+
+        <!-- ─── View 1: Chat (Default Home) ─── -->
+        <section id="view-chat" class="app-view active-view">
+            <header class="header-chat">
+                <div class="chat-header-info">
+                    <div class="ai-avatar"><i class="ph-fill ph-brain"></i></div>
+                    <div>
+                        <h2 style="font-size: 1.3rem; font-weight: 800;">حازم</h2>
+                        <span class="online-status">● جاهز للتخطيط</span>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="chat-messages" id="ai-chat-area">
+                <div class="chat-welcome-msg">
+                    <h3 class="greeting-text">أهلاً بك يا بطل! 👋</h3>
+                    <p>أنا هنا لترتيب أفكارك، ومتابعة أهدافك وجوانب حياتك الأربعة. فضفض أو اكتب اللي وراك وهنظبط الدنيا سوا.</p>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <button id="ai-voice-btn" class="btn-voice"><i class="ph-fill ph-microphone"></i></button>
+                    <input type="text" id="ai-chat-input" placeholder="اكتب أو فضفض لحازم..." autocomplete="off">
+                    <button id="ai-send-btn" class="btn-send"><i class="ph-fill ph-paper-plane-tilt"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── View 2: The 4 Pillars ─── -->
+        <section id="view-pillars" class="app-view">
+            <header class="header-main">
+                <div>
+                    <h1 class="greeting-text">الجوانب الأربعة</h1>
+                    <p class="date-subtext">مدى تأثير التزامك على شخصيتك</p>
+                </div>
+            </header>
+
+            <div class="content-scrollable" style="padding: 10px;">
+                <div id="rpg-screen"></div>
+                <div style="height: 100px;"></div>
+            </div>
+        </section>
+
+
+        <!-- ─── View 3: Analytics ─── -->
+        <section id="view-analytics" class="app-view">
+            <header class="header-main">
+                <div>
+                    <h1 class="greeting-text">التحليلات</h1>
+                    <p class="date-subtext">مراقبة التزامك وتوازن حياتك</p>
+                </div>
+            </header>
+            
+            <div class="content-scrollable">
+                
+                <!-- Balance Radar -->
+                <div class="premium-card mb-4" style="text-align: center;">
+                    <div class="card-title-area mb-3" style="justify-content: center;">
+                        <h3 style="font-size: 1.2rem; font-weight: 900;">مؤشر التوازن الاستراتيجي</h3>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+                        <canvas id="balanceRadarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Habit Analytics (Heatmap + Stats) -->
+                <div class="premium-card mb-4">
+                    <div class="card-title-area mb-3">
+                        <div class="icon-box" style="background: rgba(139, 92, 246, 0.15); width: 40px; height: 40px; font-size: 1.2rem;"><i class="ph-fill ph-fire color-primary" style="color: var(--primary);"></i></div>
+                        <h3 style="font-size: 1.1rem;">تحليل العادات التفصيلي</h3>
+                    </div>
+                    
+                    <div class="habit-selector-container mb-3" style="text-align: center;">
+                        <select id="habit-analytics-selector" class="habit-dropdown" onchange="renderSpecificHabitAnalytics()">
+                            <option value="">-- اختر العادة للتحليل --</option>
+                        </select>
+                    </div>
+
+                    <div class="habit-stats-grid mb-3" id="habit-stats-container" style="display: none; gap: 10px; grid-template-columns: 1fr 1fr 1fr;">
+                        <div class="stat-box"><span class="sb-label">بدأت من</span><span class="sb-value" id="hs-start">--</span></div>
+                        <div class="stat-box"><span class="sb-label">التكرار</span><span class="sb-value" id="hs-reps">--</span></div>
+                        <div class="stat-box"><span class="sb-label">الالتزام</span><span class="sb-value" id="hs-rate">--</span></div>
+                    </div>
+
+                    <div class="heatmap-container" id="consistency-heatmap" style="margin-top: 15px;">
+                        <!-- Heatmap cells injected via JS -->
+                        <p class="empty-list" style="width: 100%; text-align: center;">الرجاء اختيار عادة لعرض خريطة الالتزام</p>
+                    </div>
+                </div>
+
+
+
+                <div style="height: 100px;"></div>
+            </div>
+        </section>
+
+        <!-- ─── View 4: Timeline (الخطة اليومية) ─── -->
+        <section id="view-timeline" class="app-view">
+            <header class="header-main">
+                <div>
+                    <h1 class="greeting-text">الخطة اليومية</h1>
+                    <p class="date-subtext">يومك يبدأ بالمغرب وينبض بالصلاة</p>
+                </div>
+            </header>
+            
+            <div class="content-scrollable">
+                <div class="timeline-container" id="daily-timeline-list">
+                    <!-- Timeline will be injected here via JS -->
+                </div>
+                <div style="height: 100px;"></div>
+            </div>
+        </section>
+
+        <!-- ─── Floating Bottom Navigation ─── -->
+        <div class="bottom-nav-container">
+            <nav class="bottom-nav">
+                <button class="nav-btn active" data-view="view-chat" onclick="switchMainView('view-chat', this)">
+                    <i class="ph-fill ph-brain"></i>
+                    <span>حازم</span>
+                </button>
+                <button class="nav-btn" data-view="view-timeline" onclick="switchMainView('view-timeline', this)">
+                    <i class="ph-fill ph-clock-user"></i>
+                    <span>اليومية</span>
+                </button>
+                <button class="nav-btn" data-view="view-pillars" onclick="switchMainView('view-pillars', this)">
+                    <i class="ph-fill ph-squares-four"></i>
+                    <span>الجوانب</span>
+                </button>
+                <button class="nav-btn" data-view="view-analytics" onclick="switchMainView('view-analytics', this)">
+                    <i class="ph-fill ph-chart-line-up"></i>
+                    <span>التحليلات</span>
+                </button>
+            </nav>
+        </div>
+
+    </main>
+
+    <!-- Firebase SDK -->
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+      }
+    }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Main Logic -->
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration.scope);
+          }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+        });
+      }
+    </script>
+</body>
+</html>
