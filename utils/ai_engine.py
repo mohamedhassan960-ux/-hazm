@@ -2,7 +2,10 @@ import os
 import json
 from google import genai
 from datetime import datetime
-from database.db import execute_query
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure Gemini Client
 api_key = os.environ.get("GEMINI_API_KEY", "YOUR_API_KEY_HERE")

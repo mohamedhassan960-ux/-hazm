@@ -20,7 +20,7 @@ def find_working_model():
     for model_name in models_to_try:
         print(f"Trying {model_name}...")
         try:
-            response = client.models.generate_content(
+            _ = client.models.generate_content(
                 model=model_name,
                 contents="test"
             )

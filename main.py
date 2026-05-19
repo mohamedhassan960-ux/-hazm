@@ -15,10 +15,38 @@ from ui.dashboard import dashboard_bp
 from migrate_db import migrate
 from utils.helpers import get_today
 
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
+def update_supabase_js_config():
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
+    if supabase_url and supabase_anon_key:
+        try:
+            config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "js")
+            os.makedirs(config_dir, exist_ok=True)
+            config_path = os.path.join(config_dir, "supabase-config.js")
+            
+            content = f"""/**
+ * 🌅 HAZM - Supabase Configuration (Auto-generated)
+ */
+
+export const supabaseConfig = {{
+  url: "{supabase_url}",
+  anonKey: "{supabase_anon_key}"
+}};
+"""
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            print("[INFO] Successfully updated static/js/supabase-config.js")
+        except Exception as e:
+            print(f"[ERROR] Failed to write supabase-config.js: {e}")
+
 # ─── Initialize ──────────────────────────────────────
+update_supabase_js_config()
 migrate()
 init_db()
 

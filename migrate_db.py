@@ -1,8 +1,12 @@
 import sqlite3
 import os
-from config.settings import DB_PATH
+from config.settings import DB_PATH, DATABASE_URL
 
 def migrate():
+    if DATABASE_URL:
+        print("Using PostgreSQL/Supabase. Skipping local SQLite migrations.")
+        return
+
     if not os.path.exists(DB_PATH):
         print("No database found, init_db will create it.")
         return

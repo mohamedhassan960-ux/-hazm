@@ -1,14 +1,13 @@
 from flask import Blueprint, render_template, request, jsonify
 from database.db import execute_query, execute_insert
 from utils.helpers import get_today
-from datetime import datetime
 from google import genai
 from config.settings import GEMINI_API_KEY
 import json
 import re
 
 # Import Core Modules
-from core import task_manager, scoring_system
+from core import task_manager
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -102,7 +101,6 @@ def add_goal():
 def ai_command():
     data = request.json
     user_text = data.get('text', '')
-    settings = data.get('settings', {})
     
     strict_flag = """شخصيتك: 'حازم' - قائد صارم، دقيق، وقليل الكلام. 
     اللغة: العامية المصرية القوية والمباشرة (مثلاً: 'خلصت؟'، 'مفيش وقت للدلع'، 'وراك شغل'). 
@@ -135,7 +133,7 @@ def ai_command():
     
     try:
         response = client.models.generate_content(
-            model='gemini-flash-latest',
+            model='gemini-2.5-flash',
             contents=prompt
         )
         # Extract JSON from response (handling potential markdown blocks)
@@ -204,16 +202,9 @@ def get_random_poem():
     
     # For splash motivation poems, use the 500 DB poems with a non-repeating loop
     if category == 'motivation':
-        poem = execute_query("SELECT id, content, poet FROM poems WHERE category = 'motivation' AND viewed = 0 ORDER BY RANDOM() LIMIT 1", fetch_one=True)
-        
-        if not poem:
-            # All poems exhausted! Reset the viewed loop
-            execute_query("UPDATE poems SET viewed = 0 WHERE category = 'motivation'")
-            poem = execute_query("SELECT id, content, poet FROM poems WHERE category = 'motivation' AND viewed = 0 ORDER BY RANDOM() LIMIT 1", fetch_one=True)
+        poem = execute_query("SELECT id, content, poet FROM poems WHERE category = 'motivation' ORDER BY RANDOM() LIMIT 1", fetch_one=True)
         
         if poem:
-            # Mark as viewed
-            execute_query("UPDATE poems SET viewed = 1 WHERE id = ?", (poem['id'],))
             return jsonify(poem)
             
     # For praise/pillar completion, use the curated deep impact dict

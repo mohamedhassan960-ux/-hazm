@@ -1,5 +1,4 @@
 import sqlite3
-import os
 
 DB_PATH = r'c:\Users\moham\HAZM\life_system\data\sunrise.db'
 
