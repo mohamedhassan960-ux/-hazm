@@ -12,7 +12,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_API_KEY_HERE")
 
 # ─── Paths ───────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "data", "sunrise.db")
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/sunrise.db"
+else:
+    DB_PATH = os.path.join(BASE_DIR, "data", "sunrise.db")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # ─── Points System ───────────────────────────────────

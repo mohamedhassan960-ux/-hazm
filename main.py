@@ -22,6 +22,9 @@ app = Flask(__name__)
 CORS(app)
 
 def update_supabase_js_config():
+    if os.environ.get("VERCEL"):
+        print("[INFO] Running on Vercel, skipping static/js/supabase-config.js file write.")
+        return
     supabase_url = os.environ.get("SUPABASE_URL")
     supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
     if supabase_url and supabase_anon_key:
@@ -49,6 +52,18 @@ export const supabaseConfig = {{
 update_supabase_js_config()
 migrate()
 init_db()
+
+# ─── Dynamic Config Route for Vercel ─────────────────
+@app.route('/static/js/supabase-config.js')
+def serve_supabase_config_js():
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
+    content = f"""export const supabaseConfig = {{
+  url: "{supabase_url}",
+  anonKey: "{supabase_anon_key}"
+}};"""
+    return content, 200, {'Content-Type': 'application/javascript'}
+
 
 # ─── API: AI Companion ──────────────────────────────
 @app.route('/api/ai/chat', methods=['POST'])

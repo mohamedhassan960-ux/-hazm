@@ -24,6 +24,10 @@
       "dest": "/static/sw.js"
     },
     {
+      "src": "/static/js/supabase-config.js",
+      "dest": "api/index.py"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
     },
