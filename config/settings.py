@@ -1,5 +1,5 @@
 """
-Sunrise System — Configuration Settings
+🌅 Sunrise Strategic System — Flask Backend Configuration
 """
 import os
 from dotenv import load_dotenv
@@ -35,15 +35,4 @@ COLORS = {
     "gradient_end": "#FFD54F",   # Sunrise gradient end
 }
 
-# ─── App Settings ────────────────────────────────────
-APP_TITLE = "🌅 Sunrise System"
-APP_ICON = "🌅"
-APP_LAYOUT = "wide"
 
-# ─── Streamlit Page Config ───────────────────────────
-PAGE_CONFIG = {
-    "page_title": "Sunrise System — إدارة الحياة الذكي",
-    "page_icon": APP_ICON,
-    "layout": APP_LAYOUT,
-    "initial_sidebar_state": "expanded",
-}

@@ -1,8 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from database.db import execute_query, execute_insert
 from utils.helpers import get_today
-from google import genai
-from config.settings import GEMINI_API_KEY
 import json
 import re
 
@@ -10,9 +8,6 @@ import re
 from core import task_manager
 
 dashboard_bp = Blueprint('dashboard', __name__)
-
-# Configure Gemini
-client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ─── Page Routes ─────────────────────────────────────
 @dashboard_bp.route('/')
@@ -96,68 +91,6 @@ def add_goal():
     )
     return jsonify({"id": goal_id})
 
-# ─── API: AI Command ─────────────────────────────────
-@dashboard_bp.route('/api/ai/command', methods=['POST'])
-def ai_command():
-    data = request.json
-    user_text = data.get('text', '')
-    
-    strict_flag = """شخصيتك: 'حازم' - قائد صارم، دقيق، وقليل الكلام. 
-    اللغة: العامية المصرية القوية والمباشرة (مثلاً: 'خلصت؟'، 'مفيش وقت للدلع'، 'وراك شغل'). 
-    الأسلوب: محاسبة شديدة، لا تقبل الأعذار، شجّع فقط عند الإنجاز الحقيقي.""" 
-    
-    concise_flag = "ممنوع الرغي: ردك لازم يكون في حدود 10 لـ 15 كلمة بالظبط. ادخل في الموضوع فوراً."
-
-    prompt = f"""
-    {strict_flag}
-    {concise_flag}
-    
-    المستخدم بيقول: "{user_text}"
-    
-    الأركان المتاحة (Pillars): الجانب الديني، الجانب المهني، الجانب الاجتماعي، الجانب الصحي.
-    لو طلب إضافة مهمة أو عادة، استنتج الركن المناسب بدقة (مثلاً صلاة -> ديني، جيم -> صحي).
-    
-    لازم ترد بـ JSON فقط بالتنسيق ده:
-    {{
-        "message": "ردك القوي والقصير جداً بالمصري",
-        "action": "add_task" أو "none",
-        "task_details": {{
-            "title": "عنوان المهمة",
-            "pillar_id": (1 لـ 4 حسب النوع),
-            "start_time": "HH:MM أو null",
-            "end_time": "HH:MM أو null",
-            "is_habit": true أو false
-        }}
-    }}
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-        # Extract JSON from response (handling potential markdown blocks)
-        json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
-        if json_match:
-            ai_data = json.loads(json_match.group())
-            
-            if ai_data.get('action') == 'add_task':
-                details = ai_data.get('task_details', {})
-                task_manager.add_task(
-                    title=details.get('title', 'Unknown Task'),
-                    pillar_id=details.get('pillar_id', 1),
-                    start_time=details.get('start_time'),
-                    end_time=details.get('end_time')
-                )
-            
-            return jsonify({
-                "message": ai_data.get('message', "تم المعالجة"),
-                "action": ai_data.get('action', "none")
-            })
-            
-        return jsonify({"message": "عذراً، لم أفهم الطلب جيداً", "action": "none"})
-    except Exception as e:
-        return jsonify({"message": f"عذراً، حدث خطأ: {str(e)}", "action": "none"})
 
 # ─── API: Poems ──────────────────────────────────────
 @dashboard_bp.route('/api/poems/random', methods=['GET'])

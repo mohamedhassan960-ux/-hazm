@@ -3,7 +3,7 @@ import os
 from config.settings import DB_PATH, DATABASE_URL
 
 def migrate():
-    if DATABASE_URL:
+    if DATABASE_URL and not DATABASE_URL.startswith("YOUR_DATABASE") and "placeholder" not in DATABASE_URL.lower():
         print("Using PostgreSQL/Supabase. Skipping local SQLite migrations.")
         return
 

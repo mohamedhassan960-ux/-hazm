@@ -20,9 +20,9 @@ def test_api():
     except Exception as e:
         print(f"Tasks Error: {e}")
 
-    print("\n--- Testing /api/ai/command ---")
+    print("\n--- Testing /api/ai/chat ---")
     try:
-        r = requests.post(f"{base_url}/api/ai/command", json={"text": "أريد إضافة مهمة قراءة القرآن"})
+        r = requests.post(f"{base_url}/api/ai/chat", json={"message": "أريد إضافة مهمة قراءة القرآن"})
         print(f"Status: {r.status_code}")
         print(f"Data: {json.dumps(r.json(), indent=2, ensure_ascii=False)}")
     except Exception as e:

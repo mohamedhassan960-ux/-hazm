@@ -74,7 +74,7 @@ def get_stats_summary():
         FROM pillars p
         LEFT JOIN tasks t ON p.id = t.pillar_id AND t.date = ?
         GROUP BY p.id
-    """, (get_today(),))
+    """, (get_today(),), fetch=True)
     return jsonify(stats)
 
 # ─── Register Blueprints ─────────────────────────────

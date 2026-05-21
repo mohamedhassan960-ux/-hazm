@@ -6,6 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>حازم</title>
+    <meta name="description" content="حازم - نظامك الذكي لتخطيط وإدارة حياتك وتتبع متوازن لجوانب حياتك الأربعة (الديني، المهني، الاجتماعي، والصحي).">
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -19,10 +20,16 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <meta name="theme-color" content="#09090b">
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3242/3242257.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-512.png">
 </head>
 
 <body>
+    <!-- Offline Warning Banner -->
+    <div id="offline-banner" class="offline-banner">
+        <i class="ph-fill ph-wifi-slash"></i>
+        <span>أنت تعمل حالياً في وضع غير متصل بالإنترنت (أوفلاين)</span>
+    </div>
+
     <!-- ─── Splash Screen ─── -->
     <div id="splash-screen" class="splash-screen">
         <div class="splash-content">
@@ -293,11 +300,14 @@
 
         <!-- ─── View 4: Timeline (الخطة اليومية) ─── -->
         <section id="view-timeline" class="app-view">
-            <header class="header-main">
+            <header class="header-main" style="display: flex; justify-content: space-between; align-items: center; padding-top: 24px;">
                 <div>
                     <h1 class="greeting-text">الخطة اليومية</h1>
                     <p class="date-subtext">يومك يبدأ بالمغرب وينبض بالصلاة</p>
                 </div>
+                <button id="add-task-btn" class="header-action-btn" title="إضافة مهمة يدوياً">
+                    <i class="ph ph-plus" style="font-size: 1.5rem;"></i>
+                </button>
             </header>
 
             <div class="content-scrollable">
@@ -351,6 +361,42 @@
             });
         }
     </script>
+
+    <!-- ─── Premium Task Creation Modal ─── -->
+    <div id="task-modal" class="premium-modal hidden">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إضافة مهمة جديدة</h3>
+                <button class="modal-close-btn" id="modal-close-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="manual-task-form" class="modal-form">
+                <div class="form-group">
+                    <label for="task-title">عنوان المهمة</label>
+                    <input type="text" id="task-title" required placeholder="مثال: قراءة الورد اليومي، تمرين..." autocomplete="off">
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="task-time">توقيت المهمة (اختياري)</label>
+                        <input type="time" id="task-time">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="task-pillar">الجانب (الركيزة)</label>
+                        <select id="task-pillar" required>
+                            <option value="1">الديني</option>
+                            <option value="2">المهني</option>
+                            <option value="3">الاجتماعي</option>
+                            <option value="4">الصحي</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="modal-cancel-btn">إلغاء</button>
+                    <button type="submit" class="btn-primary">إضافة المهمة 🚀</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -25,6 +25,11 @@ const state = {
 };
 
 let radarChartInstance = null;
+let timelineFilter = 'all';
+window.setTimelineFilter = function(filter) {
+    timelineFilter = filter;
+    renderDailyTimelineView();
+};
 
 // ─── Guest Mode: localStorage Data Layer ─────────────
 function isGuestUser() {
@@ -363,6 +368,98 @@ function setupEventListeners() {
             if (e.key === 'Enter') handleSend();
         };
     }
+
+    // --- Manual Task Modal & Offline Banner ---
+    const addBtn = document.getElementById('add-task-btn');
+    const taskModal = document.getElementById('task-modal');
+    const closeBtn = document.getElementById('modal-close-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const backdrop = document.getElementById('modal-backdrop');
+    const form = document.getElementById('manual-task-form');
+
+    if (addBtn && taskModal) {
+        addBtn.onclick = () => {
+            taskModal.classList.remove('hidden');
+        };
+    }
+
+    const closeModal = () => {
+        if (taskModal) {
+            taskModal.classList.add('hidden');
+            form.reset();
+        }
+    };
+
+    if (closeBtn) closeBtn.onclick = closeModal;
+    if (cancelBtn) cancelBtn.onclick = closeModal;
+    if (backdrop) backdrop.onclick = closeModal;
+
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('task-title').value.trim();
+            const time = document.getElementById('task-time').value;
+            const pillarId = document.getElementById('task-pillar').value;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (!title) return;
+
+            try {
+                if (isGuestUser()) {
+                    guestDB.addTask({
+                        title: title,
+                        start_time: time || null,
+                        pillar_id: parseInt(pillarId),
+                        is_habit: false,
+                        status: 'pending',
+                        date: today
+                    });
+                    guestSyncState();
+                } else {
+                    if (supabase) {
+                        await supabase.from('tasks').insert({
+                            user_id: state.user.uid,
+                            title: title,
+                            start_time: time || null,
+                            pillar_id: parseInt(pillarId),
+                            is_habit: false,
+                            status: 'pending',
+                            date: today
+                        });
+                        await loadAllData();
+                    } else {
+                        await fetch('/api/tasks', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                title: title,
+                                pillar_id: parseInt(pillarId),
+                                start_time: time || null,
+                                is_habit: 0
+                            })
+                        });
+                        window.location.reload();
+                    }
+                }
+                closeModal();
+            } catch (err) {
+                console.error("Error creating manual task:", err);
+                alert("حدث خطأ أثناء إضافة المهمة.");
+            }
+        };
+    }
+
+    const offlineBanner = document.getElementById('offline-banner');
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            if (offlineBanner) offlineBanner.classList.remove('visible');
+        } else {
+            if (offlineBanner) offlineBanner.classList.add('visible');
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
 }
 
 async function submitChatMessage(text) {
@@ -687,6 +784,30 @@ window.toggleTaskStatus = async function (taskId, currentStatus) {
     }
 };
 
+window.deleteTaskAction = async function(taskId) {
+    if (confirm("هل أنت متأكد من حذف هذه المهمة؟")) {
+        try {
+            if (isGuestUser()) {
+                guestDB.deleteTask(taskId);
+                guestSyncState();
+            } else {
+                if (supabase) {
+                    await supabase.from('tasks').delete().eq('id', taskId);
+                    await loadAllData();
+                } else {
+                    await fetch(`/api/tasks/${taskId}`, {
+                        method: 'DELETE'
+                    });
+                    window.location.reload();
+                }
+            }
+        } catch (err) {
+            console.error("Error deleting task:", err);
+            alert("حدث خطأ أثناء حذف المهمة.");
+        }
+    }
+};
+
 function renderAnalyticsView() {
     // 1. Radar Balance (Chart.js)
     let p = [0, 0, 0, 0, 0]; // completed
@@ -825,10 +946,57 @@ window.renderSpecificHabitAnalytics = function () {
     heatmapContainer.innerHTML = heatmapHTML;
 };
 
+// Task Icon helper based on keyword match or pillar fallback
+function getTaskIcon(title, pillarId) {
+    const t = (title || '').toLowerCase();
+    if (t.includes('صلاة') || t.includes('مسجد') || t.includes('قرآن') || t.includes('ورد') || t.includes('أذكار') || t.includes('ذکر') || t.includes('دعاء') || t.includes('جامع')) {
+        return 'ph-mosque';
+    }
+    if (t.includes('شرب') || t.includes('ماء') || t.includes('مية') || t.includes('water') || t.includes('أكل') || t.includes('فطور') || t.includes('غداء') || t.includes('عشاء')) {
+        return 'ph-drop';
+    }
+    if (t.includes('رياضة') || t.includes('تمرين') || t.includes('مشي') || t.includes('gym') || t.includes('workout') || t.includes('جري') || t.includes('فتنس')) {
+        return 'ph-barbell';
+    }
+    if (t.includes('قراءة') || t.includes('كتاب') || t.includes('read') || t.includes('book') || t.includes('رواية') || t.includes('ثقافة')) {
+        return 'ph-book-open';
+    }
+    if (t.includes('برمجة') || t.includes('كود') || t.includes('شغل') || t.includes('عمل') || t.includes('study') || t.includes('مذاكرة') || t.includes('كتابة') || t.includes('تطوير')) {
+        return 'ph-laptop';
+    }
+    if (t.includes('عائلة') || t.includes('أهل') || t.includes('أصدقاء') || t.includes('كلم') || t.includes('زيارة') || t.includes('صاحب') || t.includes('أصحابي')) {
+        return 'ph-users';
+    }
+    
+    // Fallback based on pillar
+    if (pillarId == 1) return 'ph-sparkles';
+    if (pillarId == 2) return 'ph-briefcase';
+    if (pillarId == 3) return 'ph-heart';
+    if (pillarId == 4) return 'ph-heartbeat';
+    return 'ph-check-square';
+}
+
 // ─── Daily Timeline Logic ───
 function renderDailyTimelineView() {
     const container = document.getElementById('daily-timeline-list');
     if (!container) return;
+
+    // Calculate Summary Metrics
+    const totalTasks = state.tasks.filter(t => !t.is_habit).length;
+    const totalHabits = state.tasks.filter(t => t.is_habit).length;
+    const completedTasks = state.tasks.filter(t => !t.is_habit && t.status === 'done').length;
+    const completedHabits = state.tasks.filter(t => t.is_habit && t.status === 'done').length;
+    const totalItems = state.tasks.length;
+    const completedItems = state.tasks.filter(t => t.status === 'done').length;
+    const percent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const remainingItems = totalItems - completedItems;
+
+    let pointsEarned = 0;
+    state.tasks.forEach(t => {
+        if (t.status === 'done') {
+            pointsEarned += (t.points || 10);
+        }
+    });
 
     const prayers = [
         { title: 'المغرب', time: '18:00', type: 'prayer', hour: 18 },
@@ -839,10 +1007,84 @@ function renderDailyTimelineView() {
         { title: 'العصر', time: '15:30', type: 'prayer', hour: 39.5 }
     ];
 
-    let items = [...prayers];
+    // Compute Current Time of Day in Islamic Calendar Flow
+    const now = new Date();
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+    const currentHourVal = currentH + (currentM / 60);
+    let islamicHour = currentHourVal;
+    if (currentHourVal < 18) {
+        islamicHour = currentHourVal + 24;
+    }
 
-    // Map tasks to hours
-    state.tasks.forEach(task => {
+    let periodName = 'بعد العصر';
+    let activePrayerTitle = 'العصر';
+    let activeMinHour = 39.5;
+    let activeMaxHour = 42.0;
+
+    if (islamicHour >= 18 && islamicHour < 19.5) {
+        periodName = 'بعد المغرب';
+        activePrayerTitle = 'المغرب';
+        activeMinHour = 18.0;
+        activeMaxHour = 19.5;
+    } else if (islamicHour >= 19.5 && islamicHour < 28.5) {
+        periodName = 'بعد العشاء';
+        activePrayerTitle = 'العشاء';
+        activeMinHour = 19.5;
+        activeMaxHour = 28.5;
+    } else if (islamicHour >= 28.5 && islamicHour < 30) {
+        periodName = 'بعد الفجر';
+        activePrayerTitle = 'الفجر';
+        activeMinHour = 28.5;
+        activeMaxHour = 30.0;
+    } else if (islamicHour >= 30 && islamicHour < 36) {
+        periodName = 'بعد الشروق';
+        activePrayerTitle = 'الشروق';
+        activeMinHour = 30.0;
+        activeMaxHour = 36.0;
+    } else if (islamicHour >= 36 && islamicHour < 39.5) {
+        periodName = 'بعد الظهر';
+        activePrayerTitle = 'الظهر';
+        activeMinHour = 36.0;
+        activeMaxHour = 39.5;
+    } else {
+        periodName = 'بعد العصر';
+        activePrayerTitle = 'العصر';
+        activeMinHour = 39.5;
+        activeMaxHour = 42.0;
+    }
+
+    // Mark active prayer anchor
+    prayers.forEach(p => {
+        if (p.title === activePrayerTitle) {
+            p.isActive = true;
+        }
+    });
+
+    const currentHourStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const timeItem = {
+        type: 'current_time',
+        hour: islamicHour,
+        period: periodName,
+        timeStr: currentHourStr
+    };
+
+    let items = [...prayers, timeItem];
+
+    // Filter tasks based on selected pill
+    let filteredTasks = state.tasks;
+    if (timelineFilter === 'remaining') {
+        filteredTasks = state.tasks.filter(t => t.status !== 'done');
+    } else if (timelineFilter === 'tasks') {
+        filteredTasks = state.tasks.filter(t => !t.is_habit);
+    } else if (timelineFilter === 'habits') {
+        filteredTasks = state.tasks.filter(t => t.is_habit);
+    } else if (timelineFilter === 'completed') {
+        filteredTasks = state.tasks.filter(t => t.status === 'done');
+    }
+
+    // Map filtered tasks to hours
+    filteredTasks.forEach(task => {
         let taskHour = 37; // Default to after Dhuhr if no time
         if (task.start_time && task.start_time !== '--:--') {
             const parts = task.start_time.split(':');
@@ -857,11 +1099,70 @@ function renderDailyTimelineView() {
     // Sort by Islamic Day Flow (Maghrib to Maghrib)
     items.sort((a, b) => a.hour - b.hour);
 
-    container.innerHTML = '<div class="timeline-track"></div>';
+    // Build timeline UI
+    let html = '';
+
+    // Render Filter Pills first
+    html += `
+        <div class="tl-filters">
+            <button class="tl-filter-btn ${timelineFilter === 'all' ? 'active' : ''}" onclick="window.setTimelineFilter('all')">الكل</button>
+            <button class="tl-filter-btn ${timelineFilter === 'remaining' ? 'active' : ''}" onclick="window.setTimelineFilter('remaining')">المتبقي</button>
+            <button class="tl-filter-btn ${timelineFilter === 'tasks' ? 'active' : ''}" onclick="window.setTimelineFilter('tasks')">المهام</button>
+            <button class="tl-filter-btn ${timelineFilter === 'habits' ? 'active' : ''}" onclick="window.setTimelineFilter('habits')">العادات</button>
+            <button class="tl-filter-btn ${timelineFilter === 'completed' ? 'active' : ''}" onclick="window.setTimelineFilter('completed')">المكتملة</button>
+        </div>
+    `;
+
+    // Top summary bar (Live Stats Card)
+    if (totalItems > 0) {
+        html += `
+            <div class="tl-header-metrics">
+                <div class="tl-metrics-row">
+                    <span class="tl-metrics-title">تقدمك اليومي</span>
+                    <span class="tl-metrics-val">${percent}%</span>
+                </div>
+                <div class="tl-progress-bar-bg">
+                    <div class="tl-progress-bar-fill" style="width: ${percent}%;"></div>
+                </div>
+                <div class="tl-metrics-summary">
+                    <div class="tl-metric-card">
+                        <span class="num">${completedTasks}/${totalTasks}</span>
+                        <span class="label">المهام</span>
+                    </div>
+                    <div class="tl-metric-card">
+                        <span class="num">${completedHabits}/${totalHabits}</span>
+                        <span class="label">العادات</span>
+                    </div>
+                    <div class="tl-metric-card" style="border-right: 1px solid rgba(255,255,255,0.05); padding-right: 8px;">
+                        <span class="num" style="color: #fca5a5;">${remainingItems}</span>
+                        <span class="label">المتبقي</span>
+                    </div>
+                    <div class="tl-metric-card">
+                        <span class="num" style="color: #fbbf24;">+${pointsEarned}</span>
+                        <span class="label">النقاط</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    html += '<div class="timeline-container">';
+    html += '<div class="timeline-track"></div>';
+
     items.forEach((item) => {
-        if (item.type === 'prayer' || item.type === 'sunrise') {
-            container.innerHTML += `
-                <div class="tl-item tl-prayer">
+        if (item.type === 'current_time') {
+            html += `
+                <div class="tl-current-time-indicator">
+                    <div class="tl-current-time-line"></div>
+                    <div class="tl-current-time-label">
+                        <i class="ph-fill ph-navigation-arrow"></i>
+                        أنت هنا: ${item.period} (${item.timeStr})
+                    </div>
+                </div>
+            `;
+        } else if (item.type === 'prayer' || item.type === 'sunrise') {
+            html += `
+                <div class="tl-item tl-prayer ${item.isActive ? 'active-prayer' : ''}">
                     <div class="tl-title">${item.title}</div>
                     <div class="tl-time">${item.time}</div>
                 </div>
@@ -874,25 +1175,97 @@ function renderDailyTimelineView() {
             if (item.pillar_id == 3) taskColor = 'var(--accent-social)';
             if (item.pillar_id == 4) taskColor = 'var(--accent-health)';
 
-            container.innerHTML += `
-                <div class="tl-item tl-task ${item.status === 'done' ? 'done' : ''}" style="--task-color: ${taskColor};" onclick="toggleTaskStatus('${item.id}', '${item.status}')">
-                    <div class="tl-title">${item.title}</div>
-                    <div class="tl-time">${item.start_time && item.start_time !== '--:--' ? item.start_time : 'مرن'}</div>
+            const isHabit = !!item.is_habit;
+            const pointsVal = item.points || 10;
+            const isHighPoints = pointsVal >= 20;
+
+            // Look up pillar details
+            const pillar = PILLARS.find(p => p.id == item.pillar_id) || PILLARS[0];
+
+            // Determine if the task is in the current active period and is pending
+            const isFocusPeriod = item.hour >= activeMinHour && item.hour < activeMaxHour;
+            const isPending = item.status !== 'done';
+            const showFocusHighlight = isFocusPeriod && isPending;
+
+            // Task icon helper
+            const taskIcon = getTaskIcon(item.title, item.pillar_id);
+
+            html += `
+                <div class="tl-item tl-task ${item.status === 'done' ? 'done' : ''} ${isHabit ? 'is-habit' : ''} ${showFocusHighlight ? 'active-period-focus' : ''}" style="--task-color: ${taskColor};" onclick="toggleTaskStatus('${item.id}', '${item.status}')">
+                    <div class="tl-card-content">
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                            <div class="tl-checkbox-wrapper">
+                                <i class="ph ${item.status === 'done' ? 'ph-check-circle checked' : 'ph-circle'} tl-checkbox"></i>
+                            </div>
+                            
+                            <div class="tl-task-icon" style="color: ${taskColor}; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border-radius: 8px; width: 32px; height: 32px;">
+                                <i class="ph ${taskIcon}"></i>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span class="tl-title">${item.title}</span>
+                                    
+                                    ${showFocusHighlight ? '<span class="tl-focus-badge"><i class="ph-fill ph-target"></i> ركّز هنا</span>' : ''}
+                                    
+                                    <span class="tl-pillar-badge" style="--pillar-color: ${pillar.colorHex};">
+                                        <i class="ph ph-squares-four"></i> ${pillar.label}
+                                    </span>
+
+                                    <span class="tl-points-badge ${isHighPoints ? 'high-importance' : ''}">+${pointsVal} نقطة</span>
+                                </div>
+                                <span class="tl-time-text">
+                                    ${item.start_time && item.start_time !== '--:--' ? '<i class="ph ph-clock"></i> ' + item.start_time : '<i class="ph ph-clock"></i> مرن'}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button class="tl-delete-btn" onclick="event.stopPropagation(); window.deleteTaskAction('${item.id}')" title="حذف المهمة">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
         }
     });
 
-    // If no tasks at all, add a subtle call to action
-    if (state.tasks.length === 0) {
-        container.innerHTML += `
-            <div style="text-align: center; margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.1);">
-                <i class="ph-fill ph-calendar-blank" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 10px; opacity: 0.5;"></i>
-                <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 700;">يومك يبدو هادئاً جداً</p>
-                <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin-top: 5px;">تحدث مع حازم لإضافة مهام أو عادات جديدة لخطتك اليومية</p>
+    html += '</div>'; // close timeline-container
+
+    // Show congrats / empty state card if no tasks match the active filter
+    if (filteredTasks.length === 0) {
+        let emptyIcon = 'ph-calendar-blank';
+        let emptyTitle = 'يومك يبدو هادئاً جداً';
+        let emptyDesc = 'تحدث مع حازم لإضافة مهام أو عادات جديدة لخطتك اليومية.';
+
+        if (timelineFilter === 'remaining') {
+            emptyIcon = 'ph-trophy';
+            emptyTitle = 'أنت بطل اليوم! 🏆';
+            emptyDesc = 'لقد أنجزت جميع المهام والعادات المجدولة لليوم. استمتع بوقتك!';
+        } else if (timelineFilter === 'tasks') {
+            emptyIcon = 'ph-target';
+            emptyTitle = 'لا توجد مهام معلقة';
+            emptyDesc = 'جميع المهام المجدولة اليوم مكتملة أو لم تقم بإضافة مهام بعد.';
+        } else if (timelineFilter === 'habits') {
+            emptyIcon = 'ph-arrows-counter-clockwise';
+            emptyTitle = 'لا توجد عادات متبقية';
+            emptyDesc = 'أنهيت عاداتك اليومية كاملة أو لا توجد عادات مجدولة لليوم.';
+        } else if (timelineFilter === 'completed') {
+            emptyIcon = 'ph-chart-line-up';
+            emptyTitle = 'ابدأ خطوتك الأولى 💪';
+            emptyDesc = 'لم تنجز أي مهمة أو عادة حتى الآن. تذكر أن رحلة الألف ميل تبدأ بخطوة!';
+        }
+
+        html += `
+            <div style="text-align: center; margin-top: 40px; padding: 30px; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.08); max-width: 420px; margin-left: auto; margin-right: auto; backdrop-filter: blur(8px);">
+                <i class="ph-fill ${emptyIcon}" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 12px; opacity: 0.8; display: block;"></i>
+                <p style="color: white; font-size: 1.05rem; font-weight: 800; margin-bottom: 6px;">${emptyTitle}</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-top: 5px;">${emptyDesc}</p>
             </div>
         `;
     }
+
+    container.innerHTML = html;
 }
 
 // ─────────────────────────────────────────────────────────
